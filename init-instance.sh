@@ -20,10 +20,26 @@ if [[ $2 = "--virtualbox" ]]; then
 fi
 
 # Configure Multipass to use the correct hypervisor
-#if [[ $HYPERVISOR = "virtualbox" ]]; then
-#    # TODO: this is NEEDED but somehow it breaks subsequent commands – can we make sure elevated privileges are used only for a single command?
-#    /bin/bash -c "sudo multipass set local.driver=virtualbox"
-#fi
+CURRENT=$(sudo multipass get local.driver)
+if [[ $HYPERVISOR = "virtualbox" ]]; then
+    if [[ ! $CURRENT = "virtualbox" ]]; then
+        sudo multipass set local.driver=virtualbox
+        sleep 2
+        echo "==> Configured Multipass to use VirtualBox; exiting, please re-run the script with the same parameters again!"
+        exit 0
+    else
+        echo "--> Multipass is already configured to use VirtualBox, continuing…"
+    fi
+else
+    if [[ ! $CURRENT = "hyperkit" ]]; then
+        sudo multipass set local.driver=hyperkit
+        sleep 2
+        echo "==> Configured Multipass to use HyperKit; exiting, please re-run the script with the same parameters again!"
+        exit 0
+    else
+        echo "--> Multipass is already configured to use HyperKit, continuing…"
+    fi
+fi
 
 # Spawn a new instance with a name given as first argument to the script
 # If needed, can specify `focal` or other Ubuntu codename as last argument
