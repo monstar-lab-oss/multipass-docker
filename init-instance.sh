@@ -81,20 +81,22 @@ fi
 echo "--> VM detected at ${IP_ADDRESS}:${PORT}…"
 
 # Alter ~/.ssh/config
-if grep "Host multipass" ~/.ssh/config > /dev/null; then
-    echo "--> Host multipass exists in SSH config, skipping ~/.ssh/config modification…"
-    # TODO: this is actually not 100% correct, we should replace the existing entry with new one as SSH port might have changed in case of VirtualBox hypervisor
-else
-    echo "==> Modifying ~/.ssh/config…"
-    {
-        echo
-        echo "Host multipass"
-        echo "  HostName $IP_ADDRESS"
-        echo "  Port $PORT"
-        echo "  User ubuntu"
-        echo "  IdentityFile ~/.ssh/id_multipass_docker"
-     } >> ~/.ssh/config
+if grep "# -- ml-multipass-docker - begin" ~/.ssh/config > /dev/null; then
+    echo "==> Existing host multipass found in SSH config, removing…"
+    perl -i.backup -p0e 's/# -- ml-multipass-docker - begin --.*# -- ml-multipass-docker - end --//sm' ~/.ssh/config
 fi
+
+echo "==> Modifying ~/.ssh/config…"
+{
+    echo
+    echo "# -- ml-multipass-docker - begin --"
+    echo "Host multipass"
+    echo "  HostName $IP_ADDRESS"
+    echo "  Port $PORT"
+    echo "  User ubuntu"
+    echo "  IdentityFile ~/.ssh/id_multipass_docker"
+    echo "# -- ml-multipass-docker - end --"
+} >> ~/.ssh/config
 
 if docker context ls | grep multipass > /dev/null; then
     echo "--> Docker context multipass exists, skipping creation…"
