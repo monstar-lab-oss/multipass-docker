@@ -16,23 +16,24 @@ if [[ $2 = "--virtualbox" ]]; then
 fi
 
 # Configure Multipass to use the correct hypervisor
-if [[ $HYPERVISOR = "virtualbox" ]]; then
-    sudo multipass set local.driver=virtualbox
-fi
+#if [[ $HYPERVISOR = "virtualbox" ]]; then
+#    # TODO: this is NEEDED but somehow it breaks subsequent commands – can we make sure elevated privileges are used only for a single command?
+#    /bin/bash -c "sudo multipass set local.driver=virtualbox"
+#fi
 
 # Spawn a new instance with a name given as first argument to the script
 # If needed, can specify `focal` or other Ubuntu codename as last argument
 # By default, Multipass will spawn a new instance with the latest stable Ubuntu,
 # which is `focal` at the time of the script creation
 echo "==> Creating a new VM, this might take a while…"
-multipass launch --name "${NAME}" # focal
+multipass launch --name "$NAME"
 
 # Transfer setup script to the new instance
 echo "==> Installing Docker inside the VM…"
-multipass transfer setup-instance.sh "${NAME}":/home/ubuntu/setup-instance.sh
+multipass transfer setup-instance.sh "$NAME":/home/ubuntu/setup-instance.sh
 
 # Execute script
-multipass exec "${NAME}" -- /bin/bash -x "/home/ubuntu/setup-instance.sh"
+multipass exec "$NAME" -- /bin/bash -x "/home/ubuntu/setup-instance.sh"
 
 # Enable passwordless SSH to the Multipass instance
 # First, let’s create a new SSH key pair
@@ -45,8 +46,8 @@ fi
 
 # Add the key to list of authorized keys
 echo "==> Setting up passwordless SSH…"
-multipass transfer ~/.ssh/id_multipass_docker.pub "${NAME}":/home/ubuntu/.ssh/id_multipass_docker.pub
-multipass exec "${NAME}" -- /bin/bash -c "cat /home/ubuntu/.ssh/id_multipass_docker.pub >> /home/ubuntu/.ssh/authorized_keys"
+multipass transfer ~/.ssh/id_multipass_docker.pub "$NAME":/home/ubuntu/.ssh/id_multipass_docker.pub
+multipass exec "$NAME" -- /bin/bash -c "cat /home/ubuntu/.ssh/id_multipass_docker.pub >> /home/ubuntu/.ssh/authorized_keys"
 
 # Find out IP address & connection method to the instance
 IP_ADDRESS=$(multipass info docker | grep IPv4 | awk '{ print $2; }')
@@ -62,13 +63,14 @@ echo "--> VM detected at ${IP_ADDRESS}:${PORT}…"
 # Alter ~/.ssh/config
 if grep "Host multipass" ~/.ssh/config > /dev/null; then
     echo "--> Host multipass exists in SSH config, skipping ~/.ssh/config modification…"
+    # TODO: this is actually not 100% correct, we should replace the existing entry with new one as SSH port might have changed in case of VirtualBox hypervisor
 else
     echo "==> Modifying ~/.ssh/config…"
     {
         echo
         echo "Host multipass"
-        echo "  HostName ${IP_ADDRESS}"
-        echo "  Port ${PORT}"
+        echo "  HostName $IP_ADDRESS"
+        echo "  Port $PORT"
         echo "  User ubuntu"
         echo "  IdentityFile ~/.ssh/id_multipass_docker"
      } >> ~/.ssh/config
