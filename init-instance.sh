@@ -24,7 +24,7 @@ CURRENT=$(sudo multipass get local.driver)
 if [[ $HYPERVISOR = "virtualbox" ]]; then
     if [[ ! $CURRENT = "virtualbox" ]]; then
         sudo multipass set local.driver=virtualbox
-        sleep 2
+        sleep 5
         echo "==> Configured Multipass to use VirtualBox; exiting, please re-run the script with the same parameters again!"
         exit 0
     else
@@ -33,7 +33,7 @@ if [[ $HYPERVISOR = "virtualbox" ]]; then
 else
     if [[ ! $CURRENT = "hyperkit" ]]; then
         sudo multipass set local.driver=hyperkit
-        sleep 2
+        sleep 5
         echo "==> Configured Multipass to use HyperKit; exiting, please re-run the script with the same parameters again!"
         exit 0
     else
@@ -75,7 +75,7 @@ PORT=22
 
 if [[ $HYPERVISOR = "virtualbox" ]]; then
     IP_ADDRESS="localhost"
-    PORT=$(sudo VBoxManage showvminfo docker | grep -i nic | grep "name = ssh," | sed -rn 's/.*host port = ([[:digit:]]+).*/\1/p')
+    PORT=$(sudo VBoxManage showvminfo docker --machinereadable | grep ssh | sed 's/^.*="\(.*\)"$/\1/' | awk 'BEGIN { FS = "," }; { print $4 }')
 fi
 
 echo "--> VM detected at ${IP_ADDRESS}:${PORT}…"
